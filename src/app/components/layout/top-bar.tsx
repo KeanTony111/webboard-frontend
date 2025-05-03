@@ -3,8 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useMobileMenu } from "@/hooks/use-mobile-menu"
+import { Button } from "@/app/components/ui/button"
+import { useMobileMenu } from "@/app/hooks/use-mobile-menu"
 
 interface TopBarProps {
   showMenuButton?: boolean

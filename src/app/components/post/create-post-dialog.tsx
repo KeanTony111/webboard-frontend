@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { ChevronDown, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
+import { Button } from "@/app/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/app/components/ui/dialog"
+import { Input } from "@/app/components/ui/input"
+import { Textarea } from "@/app/components/ui/textarea"
+import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
+import { cn } from "@/app/lib/utils"
 import type { Community } from "./community-dropdown"
 
 interface CreatePostDialogProps {

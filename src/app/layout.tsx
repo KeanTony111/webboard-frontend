@@ -2,8 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { MobileMenuProvider } from "@/hooks/use-mobile-menu"
-import { MobileSidebar } from "@/components/layout/mobile-sidebar"
+import { MobileMenuProvider } from "@/app/hooks/use-mobile-menu"
+import { MobileSidebar } from "@/app/components/layout/mobile-sidebar"
 
 const inter = Inter({ subsets: ["latin"] })
 

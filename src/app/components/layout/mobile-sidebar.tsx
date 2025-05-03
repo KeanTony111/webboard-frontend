@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { Home, FileText } from "lucide-react"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { useMobileMenu } from "@/hooks/use-mobile-menu" 
+import { Sheet, SheetContent } from "@/app/components/ui/sheet"
+import { useMobileMenu } from "@/app/hooks/use-mobile-menu" 
 
 export function MobileSidebar() {
   const { open, setOpen } = useMobileMenu()
