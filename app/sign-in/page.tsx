@@ -31,8 +31,6 @@ export default function SignInPage() {
 				console.log("Sign-in successful", data)
         // Set a cookie for 1 day
         Cookies.set("authToken", data.access_token, { expires: 1 })
-
-        // Redirect to the home page or another page
         router.push("/")
       } else {
         console.error("Sign-in failed", await response.json())

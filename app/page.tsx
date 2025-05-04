@@ -1,212 +1,133 @@
 "use client"
 
 import type React from "react"
+import type { Post } from "../components/post/post-card"
+import type { Community } from "@/components/post/community-dropdown-with-api"
 
 import { useState, useRef, useEffect } from "react"
 import { Plus } from "lucide-react"
 import { TopBar } from "@/components/layout/top-bar"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
-import { PostCard, type Post } from "@/components/post/post-card"
+import { PostCard } from "@/components/post/post-card"
 import { Pagination } from "@/components/ui/pagination"
 import { SearchBar } from "@/components/post/search-bar"
-import { CommunityDropdown, type Community } from "@/components/post/community-dropdown"
+import CommunityDropdownWithAPI from "@/components/post/community-dropdown-with-api"
 import { CreatePostDialog } from "@/components/post/create-post-dialog"
 import { ENV } from "../lib/config/env"
-
-// Mock data for posts
-const allPosts = Array.from({ length: 50 }, (_, i) => ({
-  id: `${i + 1}`,
-  title: `Post ${i + 1}: ${
-    [
-      "The Future of AI",
-      "Cooking Tips for Beginners",
-      "Pet Care Essentials",
-      "Health and Wellness",
-      "Fashion Trends",
-      "Exercise Routines",
-      "Travel Destinations",
-    ][i % 7]
-  }`,
-  content:
-    "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam voluptates, quod, voluptatibus, quae voluptatem quas voluptatum quibusdam quidem voluptas quia nesciunt. Quisquam, quae. Quisquam voluptates, quod, voluptatibus.",
-  category: ["History", "Food", "Pets", "Health", "Fashion", "Exercise", "Others"][i % 7],
-  commentCount: Math.floor(Math.random() * 50),
-  author: {
-    name: ["Jassica", "John", "Emma", "Michael", "Sophia"][i % 5],
-    avatarUrl: "/placeholder.svg?height=40&width=40",
-    isCurrentUser: i % 5 === 0,
-  },
-}))
-
-// Community categories
-const communities: Community[] = [
-  { value: "history", label: "History" },
-  { value: "food", label: "Food" },
-  { value: "pets", label: "Pets" },
-  { value: "health", label: "Health" },
-  { value: "fashion", label: "Fashion" },
-  { value: "exercise", label: "Exercise" },
-  { value: "others", label: "Others" },
-]
 
 export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [totalPosts, setTotalPosts] = useState(0)
-  const [communities, setCommunities] = useState<Community[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [isSearching, setIsSearching] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // Changed from isSearching
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(Math.ceil(allPosts.length / 10))
+  const [totalPages, setTotalPages] = useState(0)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null) // Store community ID
+  const [communities, setCommunities] = useState<Community[]>([])
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const response = await fetch(`${ENV.API_ENDPOINT}/posts`)
-        const data = await response.json()
-        console.log("Fetched posts:", data)
-        setPosts(data.posts)
-        setTotalPosts(data.total)
-      } catch (error) {
-        console.error("Failed to fetch posts:", error)
+  // Unified data fetching function
+  const fetchData = async (page = 1, communityId: string | null = null, searchTerm = "") => {
+    setIsLoading(true)
+    try {
+      let url = "";
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "10", // Assuming limit is 10
+      });
+
+      if (searchTerm.length >= 2) {
+        url = `${ENV.API_ENDPOINT}/search/posts`;
+        params.set("searchTerm", searchTerm);
+        if (communityId) {
+          params.set("communityId", communityId);
+        }
+      } else {
+        url = `${ENV.API_ENDPOINT}/search/posts`;
+        if (communityId) {
+          params.set("communityId", communityId);
+        }
       }
+
+      const response = await fetch(`${url}?${params.toString()}`);
+      const data = await response.json();
+
+      // Adjust based on actual API response structure for search vs. get all
+      const fetchedPosts = data.posts || data; // Handle potential differences in response structure
+      const total = data.total ?? fetchedPosts.length; // Adjust total based on response
+
+      setPosts(Array.isArray(fetchedPosts) ? fetchedPosts : []);
+      setTotalPosts(total);
+      setTotalPages(Math.ceil(total / 10));
+      setCurrentPage(page);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      setPosts([]); // Clear posts on error
+      setTotalPosts(0);
+      setTotalPages(0);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    // Fetch initial posts and communities
+    fetchData();
 
     const fetchCommunities = async () => {
       try {
-        const response = await fetch(`${ENV.API_ENDPOINT}/communities`)
-        const data = await response.json()
-        setCommunities(data)
+        const response = await fetch(`${ENV.API_ENDPOINT}/communities`);
+        const data = await response.json();
+        setCommunities(data);
       } catch (error) {
-        console.error("Failed to fetch communities:", error)
+        console.error("Failed to fetch communities:", error);
       }
-    }
-
-    fetchPosts()
-    fetchCommunities()
-  }, [])
+    };
+    fetchCommunities();
+  }, []); // Run only on mount
 
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value
-    setSearchQuery(query)
+    const query = e.target.value;
+    setSearchQuery(query);
 
-    // Clear previous timeout
     if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
+      clearTimeout(searchTimeoutRef.current);
     }
 
-    // Only search if query is 2 or more characters
-    if (query.length >= 2) {
-      setIsSearching(true)
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchData(1, selectedCommunityId, query); // Fetch page 1 with new search
+    }, 500); // Debounce
+  };
 
-      // Debounce search to avoid too many API calls
-      searchTimeoutRef.current = setTimeout(() => {
-        searchPosts(query, selectedFilter)
-      }, 300)
-    } else if (query.length === 0) {
-      // Reset to first page of all posts or filtered posts
-      filterPosts(selectedFilter)
-      setIsSearching(false)
-    }
-  }
-
-  // Filter posts by category
-  const filterPosts = (category: string | null) => {
-    setSelectedFilter(category)
-    setCurrentPage(1)
-
-    if (!category) {
-      // No filter, show all posts
-      setPosts(allPosts.slice(0, 10))
-      setTotalPages(Math.ceil(allPosts.length / 10))
-      return
-    }
-
-    // Filter posts by category
-    const filtered = allPosts.filter((post) => post.category.toLowerCase() === category.toLowerCase())
-
-    setPosts(filtered.slice(0, 10))
-    setTotalPages(Math.ceil(filtered.length / 10))
-  }
-
-  // Mock API call for searching posts
-  const searchPosts = async (query: string, category: string | null = null) => {
-    // In a real app, this would be an API call
-    // For demo purposes, we'll filter the mock data
-    try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      let results = allPosts
-
-      // Apply category filter if selected
-      if (category) {
-        results = results.filter((post) => post.category.toLowerCase() === category.toLowerCase())
-      }
-
-      // Apply search query
-      results = results.filter(
-        (post) =>
-          post.title.toLowerCase().includes(query.toLowerCase()) ||
-          post.content.toLowerCase().includes(query.toLowerCase()),
-      )
-
-      setPosts(results.slice(0, 10))
-      setTotalPages(Math.ceil(results.length / 10))
-      setCurrentPage(1)
-      setIsSearching(false)
-    } catch (error) {
-      console.error("Search failed:", error)
-      setIsSearching(false)
-    }
-  }
+  // Filter posts by community
+  const filterPostsByCommunity = (communityId: string | null) => {
+    setSelectedCommunityId(communityId);
+    fetchData(1, communityId, searchQuery); // Fetch page 1 with new filter
+  };
 
   // Handle pagination
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    fetchData(page, selectedCommunityId, searchQuery); // Fetch new page with current filters
+  };
 
-    // In a real app, this would be an API call with pagination params
-    // For demo purposes, we'll slice the mock data
-    let filteredPosts = allPosts
-
-    // Apply category filter if selected
-    if (selectedFilter) {
-      filteredPosts = filteredPosts.filter((post) => post.category.toLowerCase() === selectedFilter.toLowerCase())
-    }
-
-    // Apply search filter if present
-    if (searchQuery.length >= 2) {
-      filteredPosts = filteredPosts.filter(
-        (post) =>
-          post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          post.content.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    }
-
-    const startIndex = (page - 1) * 10
-    setPosts(filteredPosts.slice(startIndex, startIndex + 10))
-  }
-
-  // Handle create post
-  const handleCreatePost = (title: string, content: string, category: string) => {
-    // In a real app, this would be an API call
-    console.log("Creating post:", { title, content, category })
-    setCreateDialogOpen(false)
-  }
+  // Handle create post (Placeholder - needs actual implementation)
+  const handleCreatePost = (/* title: string, content: string, communityId: string */) => {
+    console.log("Creating post...");
+    setCreateDialogOpen(false);
+    // TODO: Implement actual post creation API call and refresh data
+    fetchData(currentPage, selectedCommunityId, searchQuery); // Refresh current view after potential post creation
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-200">
       <TopBar />
 
       <div className="flex flex-1">
-        {/* Sidebar - visible only on desktop */}
         <Sidebar />
 
-        {/* Main content */}
         <main className="flex-1 pb-8">
           <div className="max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-4">
             {/* Search and filters - mobile */}
@@ -214,10 +135,9 @@ export default function HomePage() {
               <SearchBar value={searchQuery} onChange={handleSearchChange} className="max-w-[200px]" />
 
               <div className="flex items-center gap-2">
-                <CommunityDropdown
-                  communities={communities}
-                  selectedCommunity={selectedFilter}
-                  onSelect={filterPosts}
+                <CommunityDropdownWithAPI
+                  selectedCommunity={selectedCommunityId}
+                  onSelect={filterPostsByCommunity}
                 />
 
                 <Button className="bg-[#4CAF82] hover:bg-[#3d8c68]" onClick={() => setCreateDialogOpen(true)}>
@@ -231,10 +151,9 @@ export default function HomePage() {
               <SearchBar value={searchQuery} onChange={handleSearchChange} />
 
               <div className="flex items-center gap-3">
-                <CommunityDropdown
-                  communities={communities}
-                  selectedCommunity={selectedFilter}
-                  onSelect={filterPosts}
+                <CommunityDropdownWithAPI
+                  selectedCommunity={selectedCommunityId}
+                  onSelect={filterPostsByCommunity}
                 />
 
                 <Button className="bg-[#4CAF82] hover:bg-[#3d8c68]" onClick={() => setCreateDialogOpen(true)}>
@@ -244,26 +163,28 @@ export default function HomePage() {
             </div>
 
             {/* Loading indicator */}
-            {isSearching && (
+            {isLoading && (
               <div className="text-center py-4">
                 <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-[#4CAF82] border-r-transparent"></div>
-                <p className="mt-2 text-gray-500">Searching...</p>
+                <p className="mt-2 text-gray-500">Loading...</p>
               </div>
             )}
 
             {/* Blog posts */}
-            <div className="space-y-4">
-              {posts.length > 0 ? (
-                posts.map((post) => <PostCard key={post.id} post={post} searchQuery={searchQuery} />)
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No posts found</p>
-                </div>
-              )}
-            </div>
+            {!isLoading && (
+              <div className="space-y-4">
+                {posts.length > 0 ? (
+                  posts.map((post) => <PostCard key={post.id} post={post} searchQuery={searchQuery} />)
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No posts found</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pagination */}
-            {posts.length > 0 && (
+            {!isLoading && posts.length > 0 && (
               <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
             )}
           </div>
@@ -275,8 +196,8 @@ export default function HomePage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         communities={communities}
-        onSubmit={handleCreatePost}
+        // onSubmit prop is removed from CreatePostDialog, logic is internal now
       />
     </div>
-  )
+  );
 }

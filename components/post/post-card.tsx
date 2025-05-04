@@ -4,19 +4,38 @@ import Image from "next/image"
 import Link from "next/link"
 import { Edit, Trash2 ,MessageCircle} from "lucide-react"
 
-interface Author {
-  name: string
+interface User {
+  username: string
   avatarUrl: string
   isCurrentUser: boolean
 }
 
 export interface Post {
-  id: string
-  title: string
-  content: string
-  category: string
-  commentCount: number
-  author: Author
+  id: number;
+  title: string;
+  detail: string;
+  category?: string; // Marked as optional
+  content?: string; // Marked as optional
+  user: {
+    id: number;
+    username: string;
+    avatarUrl?: string;
+    isCurrentUser?: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+  community: {
+    id: number;
+    name: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  userId: number;
+  communityId: number;
+  createdAt: string;
+  updatedAt: string;
+  commentCount: number;
 }
 
 interface PostCardProps {
@@ -50,16 +69,17 @@ export function PostCard({ post, searchQuery = "", onEditClick, onDeleteClick }:
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <Image
-            src={post.author.avatarUrl || "/placeholder.svg"}
-            alt={post.author.name}
+            src={post.user?.avatarUrl || "/placeholder.svg"}
+            alt={post.user?.username || "User Avatar"}
             width={40}
             height={40}
             className="rounded-full"
+            
           />
-          <span className="font-medium">{post.author.name}</span>
+          <span className="font-medium text-gray-500">{post.user?.username}</span>
         </div>
 
-        {post.author.isCurrentUser && onEditClick && onDeleteClick && (
+        {post.user?.isCurrentUser && onEditClick && onDeleteClick && (
           <div className="flex items-center gap-2">
             <button onClick={() => onEditClick(post)} className="p-1 text-gray-500 hover:text-gray-700">
               <Edit className="h-5 w-5" />
@@ -71,7 +91,7 @@ export function PostCard({ post, searchQuery = "", onEditClick, onDeleteClick }:
         )}
       </div>
 
-      <div className="mt-1 text-gray-500 text-sm">{post.category}</div>
+      <div className="mt-1 text-gray-500 text-sm">{post.community?.name}</div>
 
       <Link href={`/post/${post.id}`}>
         <h2 className="text-xl font-bold mt-2 hover:text-[#4CAF82]">
@@ -79,7 +99,7 @@ export function PostCard({ post, searchQuery = "", onEditClick, onDeleteClick }:
         </h2>
       </Link>
 
-      <p className="mt-2 text-gray-700 line-clamp-3">{post.content}</p>
+      <p className="mt-2 text-gray-700 line-clamp-3">{post.detail}</p>
 
       <div className="mt-4 flex items-center text-gray-500">
        <MessageCircle className="h-5 w-5 pr-1"/> <span>{post.commentCount} Comments</span>
