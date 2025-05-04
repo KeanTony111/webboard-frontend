@@ -1,62 +1,117 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { TopBar } from "@/components/layout/top-bar"
 import { Sidebar } from "@/components/layout/sidebar"
 import { AuthorInfo } from "@/components/post/author-info"
 import { CommentsSection } from "@/components/post/comments-section"
+import { ENV } from "@/lib/config/env"
+import type { Post } from "@/components/post/post-card" 
 
-// Mock data for the post
-const post = {
-  id: "1",
-  title: "The Big Short War",
-  content:
-    'Tall, athletic, handsome with cerulean eyes, he was the kind of hyper-ambitious kid other kids loved to hate and just the type to make a big wager with no margin for error. But on the night before the S.A.T., his father took pity on him and canceled the bet. "I would\'ve lost it," Ackman concedes. He got a 780 on the verbal and a 750 on the math. "One wrong on the verbal, three wrong on the math," he muses. "I\'m still convinced some of the questions were wrong."',
-  author: {
-    name: "Zach",
-    timestamp: "5mo. ago",
-    avatarUrl: "/placeholder.svg?height=40&width=40",
-    isOnline: true,
-  },
-  commentCount: 32,
-  comments: [
-    {
-      id: "1",
-      username: "Wittawat98",
-      timestamp: "12h ago",
-      content:
-        "Lorem ipsum dolor sit amet consectetur. Purus cursus vel est a pretium quam imperdiet. Tristique auctor sed semper nibh odio iaculis sed aliquet. Amet mollis eget morbi feugiat mi risus eu. Tortor sed sagittis convallis auctor.",
-      avatarUrl: "/placeholder.svg?height=36&width=36",
-    },
-    {
-      id: "2",
-      username: "Hawaii51",
-      timestamp: "1mo. ago",
-      content:
-        "Lorem ipsum dolor sit amet consectetur. Purus cursus vel est a pretium quam imperdiet. Tristique auctor sed semper nibh odio iaculis sed aliquet. Amet mollis eget morbi feugiat mi risus eu. Tortor sed sagittis convallis auctor.",
-      avatarUrl: "/placeholder.svg?height=36&width=36",
-    },
-    {
-      id: "3",
-      username: "Helo_re",
-      timestamp: "3mo. ago",
-      content:
-        "Lorem ipsum dolor sit amet consectetur. Purus cursus vel est a pretium quam imperdiet. Tristique auctor sed semper nibh odio iaculis sed aliquet. Amet mollis eget morbi feugiat mi risus eu. Tortor sed sagittis convallis auctor.",
-      avatarUrl: "/placeholder.svg?height=36&width=36",
-    },
-    {
-      id: "4",
-      username: "Azc123",
-      timestamp: "4mo. ago",
-      content:
-        "Lorem ipsum dolor sit amet consectetur. Purus cursus vel est a pretium quam imperdiet. Tristique auctor sed semper nibh odio iaculis sed aliquet. Amet mollis eget morbi feugiat mi risus eu. Tortor sed sagittis convallis auctor.",
-      avatarUrl: "/placeholder.svg?height=36&width=36",
-    },
-  ],
+interface Comment {
+  id: number
+  content: string
+  user: {
+    id: number
+    username: string
+    avatarUrl?: string
+  }
+  createdAt: string
+  updatedAt: string
+  postId: number
+  userId: number
 }
 
 export default function PostDetailPage() {
+  const params = useParams()
+  const postId = params?.id as string // Get postId from URL
+  const [post, setPost] = useState<Post | null>(null)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchPostAndComments = async () => {
+    if (!postId) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      // Fetch Post Details
+      const postRes = await fetch(`${ENV.API_ENDPOINT}/posts/${postId}`)
+      if (!postRes.ok) {
+        throw new Error(`Failed to fetch post: ${postRes.statusText}`)
+      }
+      const postData = await postRes.json()
+      setPost(postData)
+
+      // Fetch Comments
+      const commentsRes = await fetch(`${ENV.API_ENDPOINT}/comments/${postId}`)
+      if (!commentsRes.ok) {
+        // Handle case where post exists but comments fetch fails (optional)
+        console.warn(`Failed to fetch comments: ${commentsRes.statusText}`)
+        setComments([]) // Set empty comments or handle differently
+      } else {
+        const commentsData = await commentsRes.json()
+        setComments(commentsData)
+      }
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || "Failed to load post details.")
+      setPost(null)
+      setComments([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPostAndComments()
+  }, [postId]) // Refetch if postId changes
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TopBar />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#4CAF82] border-r-transparent"></div>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TopBar />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <p className="text-red-500">Error: {error}</p>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  if (!post) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <TopBar />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center">
+            <p className="text-gray-500">Post not found.</p>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <TopBar />
@@ -68,9 +123,8 @@ export default function PostDetailPage() {
           <div className="max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
             <div className="py-4">
               <Link
-                href="/blog"
-                className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
-              >
+                href="/"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-500 hover:bg-gray-200">
                 <ArrowLeft className="h-5 w-5" />
                 <span className="sr-only">Back</span>
               </Link>
@@ -78,21 +132,32 @@ export default function PostDetailPage() {
 
             <div className="mt-4">
               <AuthorInfo
-                name={post.author.name}
-                timestamp={post.author.timestamp}
-                avatarUrl={post.author.avatarUrl}
-                isOnline={post.author.isOnline}
+                name={post.user.username} 
+                timestamp={new Date(post.createdAt).toLocaleDateString()} 
+                avatarUrl={post.user.avatarUrl || "/placeholder.svg"} 
+             
               />
 
-              <div className="mt-1 text-gray-500 text-sm">History</div>
+              <div className="mt-1 text-gray-500 text-sm">
+                {post.community.name} {/* Display community name */}
+              </div>
 
               <h1 className="text-3xl font-bold mt-4 mb-4">{post.title}</h1>
 
               <div className="prose max-w-none">
-                <p>{post.content}</p>
+                <p>{post.detail}</p> {/* Use detail field */}
               </div>
 
-              <CommentsSection comments={post.comments} commentCount={post.commentCount} />
+              <CommentsSection
+                comments={comments.map((c) => ({
+                  ...c,
+                  id: String(c.id),
+                  username: c.user.username,
+                  timestamp: new Date(c.createdAt).toLocaleDateString(),
+                  avatarUrl: c.user.avatarUrl || "/placeholder.svg",
+                }))}
+                commentCount={comments.length} 
+              />
             </div>
           </div>
         </main>
