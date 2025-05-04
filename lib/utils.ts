@@ -37,3 +37,33 @@ export async function createPost(
 
   return response.json();
 }
+
+export async function createComment(
+  commentDetail: string,
+  postId: number,
+  userId: number
+) {
+  const authToken = Cookies.get("authToken");
+
+  if (!authToken) {
+    throw new Error("User is not authenticated. Please log in.");
+  }
+
+  const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || "http://localhost:3001";
+
+  const response = await fetch(`${API_ENDPOINT}/comments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ commentDetail, postId, userId }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to create comment.");
+  }
+
+  return response.json();
+}

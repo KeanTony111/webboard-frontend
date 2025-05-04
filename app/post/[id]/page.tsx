@@ -27,7 +27,7 @@ interface Comment {
 
 export default function PostDetailPage() {
   const params = useParams()
-  const postId = params?.id as string // Get postId from URL
+  const postId = params?.id as string 
   const [post, setPost] = useState<Post | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -49,9 +49,9 @@ export default function PostDetailPage() {
       // Fetch Comments
       const commentsRes = await fetch(`${ENV.API_ENDPOINT}/comments/${postId}`)
       if (!commentsRes.ok) {
-        // Handle case where post exists but comments fetch fails (optional)
+
         console.warn(`Failed to fetch comments: ${commentsRes.statusText}`)
-        setComments([]) // Set empty comments or handle differently
+        setComments([]) 
       } else {
         const commentsData = await commentsRes.json()
         setComments(commentsData)
@@ -115,10 +115,8 @@ export default function PostDetailPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <TopBar />
-
       <div className="flex flex-1">
         <Sidebar />
-
         <main className="flex-1 pb-8">
           <div className="max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
             <div className="py-4">
@@ -129,25 +127,19 @@ export default function PostDetailPage() {
                 <span className="sr-only">Back</span>
               </Link>
             </div>
-
             <div className="mt-4">
               <AuthorInfo
                 name={post.user.username} 
                 timestamp={new Date(post.createdAt).toLocaleDateString()} 
                 avatarUrl={post.user.avatarUrl || "/placeholder.svg"} 
-             
               />
-
               <div className="mt-1 text-gray-500 text-sm">
                 {post.community.name} {/* Display community name */}
               </div>
-
               <h1 className="text-3xl font-bold mt-4 mb-4">{post.title}</h1>
-
               <div className="prose max-w-none">
                 <p>{post.detail}</p> {/* Use detail field */}
               </div>
-
               <CommentsSection
                 comments={comments.map((c) => ({
                   ...c,
@@ -157,6 +149,7 @@ export default function PostDetailPage() {
                   avatarUrl: c.user.avatarUrl || "/placeholder.svg",
                 }))}
                 commentCount={comments.length} 
+                postId={post.id}
               />
             </div>
           </div>
