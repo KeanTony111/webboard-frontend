@@ -6,8 +6,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 
 export interface Community {
-  value: string
-  label: string
+  id: number
+  name: string
+  description: string
+  createdAt: string
+  updatedAt: string
+  value?: string  
+  label?: string 
 }
 
 interface CommunityDropdownProps {
@@ -25,6 +30,13 @@ export function CommunityDropdown({
   className = "",
   buttonText = "Community",
 }: CommunityDropdownProps) {
+  // Updated logic to handle type mismatches
+  const updatedCommunities = communities.map((community) => ({
+    ...community,
+    value: community.id.toString(), // Convert id to string for compatibility
+    label: community.name,
+  }))
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -32,11 +44,11 @@ export function CommunityDropdown({
           variant="outline"
           className={`flex items-center gap-1 bg-white border-[#4CAF82] text-[#4CAF82] ${className}`}
         >
-          {selectedCommunity ? communities.find((c) => c.value === selectedCommunity.toLowerCase())?.label : buttonText}
+          {selectedCommunity ? updatedCommunities.find((c) => c.id === Number(selectedCommunity))?.name : buttonText}
           <ChevronDown className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="end">
+      <PopoverContent className="w-full p-0">
         <div className="max-h-[300px] overflow-auto">
           <div
             className={cn(
@@ -50,15 +62,15 @@ export function CommunityDropdown({
           </div>
           {communities.map((community) => (
             <div
-              key={community.value}
+              key={community.id} // Updated to use `id` instead of `value` for the key
               className={cn(
                 "relative flex cursor-pointer select-none items-center rounded-sm px-4 py-2.5 text-sm outline-none hover:bg-gray-100",
-                selectedCommunity === community.value ? "bg-[#E8F5E9] text-black" : "text-gray-700",
+                selectedCommunity === community.id.toString() ? "bg-[#E8F5E9] text-black" : "text-gray-700",
               )}
-              onClick={() => onSelect(community.value)}
+              onClick={() => onSelect(community.id.toString())} // Ensure `id` is converted to string for comparison
             >
-              {community.label}
-              {selectedCommunity === community.value && <Check className="ml-auto h-4 w-4 text-[#4CAF82]" />}
+              {community.name}
+              {selectedCommunity === community.id.toString() && <Check className="ml-auto h-4 w-4 text-[#4CAF82]" />}
             </div>
           ))}
         </div>
