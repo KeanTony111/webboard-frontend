@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Plus } from "lucide-react"
 import { TopBar } from "@/components/layout/top-bar"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -12,6 +12,7 @@ import { Pagination } from "@/components/ui/pagination"
 import { SearchBar } from "@/components/post/search-bar"
 import { CommunityDropdown, type Community } from "@/components/post/community-dropdown"
 import { CreatePostDialog } from "@/components/post/create-post-dialog"
+import { ENV } from "../lib/config/env"
 
 // Mock data for posts
 const allPosts = Array.from({ length: 50 }, (_, i) => ({
@@ -50,7 +51,9 @@ const communities: Community[] = [
 ]
 
 export default function HomePage() {
-  const [posts, setPosts] = useState<Post[]>(allPosts.slice(0, 10))
+  const [posts, setPosts] = useState<Post[]>([])
+  const [totalPosts, setTotalPosts] = useState(0)
+  const [communities, setCommunities] = useState<Community[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -58,6 +61,33 @@ export default function HomePage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch(`${ENV.API_ENDPOINT}/posts`)
+        const data = await response.json()
+        console.log("Fetched posts:", data)
+        setPosts(data.posts)
+        setTotalPosts(data.total)
+      } catch (error) {
+        console.error("Failed to fetch posts:", error)
+      }
+    }
+
+    const fetchCommunities = async () => {
+      try {
+        const response = await fetch(`${ENV.API_ENDPOINT}/communities`)
+        const data = await response.json()
+        setCommunities(data)
+      } catch (error) {
+        console.error("Failed to fetch communities:", error)
+      }
+    }
+
+    fetchPosts()
+    fetchCommunities()
+  }, [])
 
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
