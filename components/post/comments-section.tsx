@@ -11,7 +11,7 @@ interface Comment {
   id: string;
   username: string;
   timestamp: string;
-  content: string;
+  commentDetail: string;
   avatarUrl: string;
 }
 
@@ -137,7 +137,7 @@ export function CommentsSection({ comments, commentCount, postId, onCommentCreat
               key={comment.id}
               username={comment.username}
               timestamp={comment.timestamp}
-              content={comment.content}
+              content={comment.commentDetail}
               avatarUrl={comment.avatarUrl}
             />
           ))

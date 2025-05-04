@@ -13,7 +13,7 @@ import type { Post } from "@/components/post/post-card"
 
 interface Comment {
   id: number
-  content: string
+  commentDetail: string
   user: {
     id: number
     username: string
@@ -142,14 +142,15 @@ export default function PostDetailPage() {
               </div>
               <CommentsSection
                 comments={comments.map((c) => ({
-                  ...c,
                   id: String(c.id),
                   username: c.user.username,
                   timestamp: new Date(c.createdAt).toLocaleDateString(),
+                  commentDetail: c.commentDetail, // Map content to commentDetail
                   avatarUrl: c.user.avatarUrl || "/placeholder.svg",
                 }))}
-                commentCount={comments.length} 
+                commentCount={comments.length}
                 postId={post.id}
+                onCommentCreated={fetchPostAndComments} // Add callback to refresh comments
               />
             </div>
           </div>

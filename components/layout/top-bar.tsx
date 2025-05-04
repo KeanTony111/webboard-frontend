@@ -5,6 +5,8 @@ import Image from "next/image"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useMobileMenu } from "@/hooks/use-mobile-menu"
+import { useEffect, useState } from "react"
+import Cookies from "js-cookie"
 
 interface TopBarProps {
   showMenuButton?: boolean
@@ -12,6 +14,21 @@ interface TopBarProps {
 
 export function TopBar({ showMenuButton = true }: TopBarProps) {
   const { setOpen } = useMobileMenu()
+  const [username, setUsername] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Check for username cookie on component mount and cookie changes
+    const checkCookie = () => {
+      const usernameFromCookie = Cookies.get('username')
+      setUsername(usernameFromCookie || null)
+    }
+
+    checkCookie()
+    // Set up an interval to check for cookie changes
+    const interval = setInterval(checkCookie, 1000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <header className="bg-[#1e3330] text-white h-16 flex items-center justify-between px-4">
@@ -20,17 +37,28 @@ export function TopBar({ showMenuButton = true }: TopBarProps) {
       </Link>
 
       <div className="flex items-center gap-2">
-        {/* User profile on desktop */}
-        <div className="hidden md:flex items-center gap-2">
-          <span>Jassica</span>
-          <Image
-            src="/placeholder.svg?height=40&width=40"
-            alt="User avatar"
-            width={40}
-            height={40}
-            className="rounded-full border-2 border-white"
-          />
-        </div>
+        {username ? (
+          // Show user profile if logged in
+          <div className="hidden md:flex items-center gap-2">
+            <span>{username}</span>
+            <Image
+              src="/placeholder.svg?height=40&width=40"
+              alt="User avatar"
+              width={40}
+              height={40}
+              className="rounded-full border-2 border-white"
+            />
+          </div>
+        ) : (
+          // Show sign in button if not logged in
+          <Link href="/sign-in" className="hidden md:block">
+            <Button 
+              className="bg-[#49A569] hover:bg-[#49A569]/90 text-white"
+            >
+              Sign In
+            </Button>
+          </Link>
+        )}
 
         {/* Show menu button on mobile */}
         {showMenuButton && (

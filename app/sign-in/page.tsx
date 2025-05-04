@@ -31,6 +31,7 @@ export default function SignInPage() {
 				console.log("Sign-in successful", data)
         // Set a cookie for 1 day
         Cookies.set("authToken", data.access_token, { expires: 1 })
+				Cookies.set("username", username, { expires: 1 })
         router.push("/")
       } else {
         console.error("Sign-in failed", await response.json())
